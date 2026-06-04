@@ -49,6 +49,10 @@ try {
         --paths src `
         src\chinese_rewrite\app.py
 
+    if ($LASTEXITCODE -ne 0) {
+        throw "PyInstaller failed with exit code $LASTEXITCODE"
+    }
+
     if (Test-Path -LiteralPath $packageRoot) {
         Remove-Item -LiteralPath $packageRoot -Recurse -Force
     }
