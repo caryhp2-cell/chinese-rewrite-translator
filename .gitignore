@@ -12,6 +12,7 @@ __pycache__/
 venv/
 build/
 dist/
+*.egg-info/
 *.spec
 
 # Packaged runtime binaries and local config
