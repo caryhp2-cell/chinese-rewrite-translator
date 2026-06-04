@@ -1,0 +1,26 @@
+# Local model weights and caches
+*.gguf
+.cache/
+
+# Brainstorming and local agent scratch files
+.superpowers/
+
+# Python build/runtime artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.spec
+
+# Packaged runtime binaries and local config
+runtime/
+models/
+config/local*.json
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
