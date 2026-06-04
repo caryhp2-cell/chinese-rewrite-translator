@@ -16,3 +16,19 @@ Current development model:
 ```text
 qwen2.5-3b-instruct-q4_k_m.gguf
 ```
+
+## Development
+
+Create a virtual environment and install the project:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python -m pip install --upgrade pip
+.\.venv\Scripts\python -m pip install -e ".[dev]"
+```
+
+Run tests:
+
+```powershell
+.\.venv\Scripts\python -m pytest -q
+```
