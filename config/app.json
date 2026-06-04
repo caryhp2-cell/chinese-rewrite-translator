@@ -1,0 +1,7 @@
+{
+  "model": "models/qwen2.5-3b-instruct-q4_k_m.gguf",
+  "runtime": "runtime/llama-cli.exe",
+  "temperature": 0.2,
+  "max_tokens": 512,
+  "timeout_seconds": 120
+}

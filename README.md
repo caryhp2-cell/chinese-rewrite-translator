@@ -32,3 +32,26 @@ Run tests:
 ```powershell
 .\.venv\Scripts\python -m pytest -q
 ```
+
+## Packaging
+
+The portable release is assembled locally because model weights and runtime binaries are not committed.
+
+Expected local inputs:
+
+```text
+qwen2.5-3b-instruct-q4_k_m.gguf
+runtime/llama-cli.exe
+```
+
+Build the portable folder:
+
+```powershell
+.\scripts\package_portable.ps1
+```
+
+The output folder is:
+
+```text
+dist/ChineseRewritePortable/
+```
