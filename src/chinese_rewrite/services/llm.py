@@ -52,6 +52,8 @@ class LlamaService:
             raise GenerationError(
                 "Generation took too long. Please try again with shorter input."
             ) from exc
+        except OSError as exc:
+            raise GenerationError(f"Could not start the local model runtime: {exc}") from exc
 
         if completed.returncode != 0:
             details = completed.stderr.strip() or f"runtime exited with code {completed.returncode}"
@@ -60,5 +62,5 @@ class LlamaService:
         try:
             return parse_rewrite_output(completed.stdout)
         except ModelOutputParseError as exc:
-            preview = completed.stdout.strip().replace("\n", " ")[:240]
+            preview = completed.stdout.strip().replace("\n", " ")[:240] or "no output received"
             raise GenerationError(f"Could not read the model response: {preview}") from exc
