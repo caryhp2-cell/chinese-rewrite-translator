@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QCloseEvent, QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -144,14 +144,19 @@ class MainWindow(QMainWindow):
 
         self.worker_thread = QThread()
         self.worker = RewriteWorker(chinese_text, self.generate)
-        self.worker.moveToThread(self.worker_thread)
-        self.worker_thread.started.connect(self.worker.run)
-        self.worker.finished.connect(self.on_generation_finished)
-        self.worker.failed.connect(self.on_generation_failed)
-        self.worker.finished.connect(self.worker_thread.quit)
-        self.worker.failed.connect(self.worker_thread.quit)
-        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
-        self.worker_thread.start()
+        worker_thread = self.worker_thread
+        worker = self.worker
+        worker.moveToThread(worker_thread)
+        worker_thread.started.connect(worker.run)
+        worker.finished.connect(self.on_generation_finished)
+        worker.failed.connect(self.on_generation_failed)
+        worker.finished.connect(worker_thread.quit)
+        worker.failed.connect(worker_thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        worker.failed.connect(worker.deleteLater)
+        worker_thread.finished.connect(worker_thread.deleteLater)
+        worker_thread.finished.connect(self.on_worker_thread_finished)
+        worker_thread.start()
 
     @Slot(object)
     def on_generation_finished(self, result: RewriteResult) -> None:
@@ -159,8 +164,6 @@ class MainWindow(QMainWindow):
         self.professional_output.setPlainText(result.professional)
         self.rewrite_button.setEnabled(True)
         self.statusBar().showMessage("Done.", 3000)
-        self.worker = None
-        self.worker_thread = None
 
     @Slot(str)
     def on_generation_failed(self, message: str) -> None:
@@ -169,8 +172,19 @@ class MainWindow(QMainWindow):
         self.rewrite_button.setEnabled(True)
         self.statusBar().showMessage("Generation failed.", 5000)
         QMessageBox.warning(self, "Generation failed", message)
+
+    @Slot()
+    def on_worker_thread_finished(self) -> None:
         self.worker = None
         self.worker_thread = None
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if self.worker_thread is not None and self.worker_thread.isRunning():
+            event.ignore()
+            self.statusBar().showMessage("Generation is still running.")
+            return
+
+        super().closeEvent(event)
 
     def copy_output(self, text_edit: QPlainTextEdit) -> None:
         QGuiApplication.clipboard().setText(text_edit.toPlainText())
