@@ -79,6 +79,54 @@ def test_successful_generation_populates_outputs(qt_app: QApplication) -> None:
     window.close()
 
 
+def test_start_generation_ignores_reentry_while_generation_exists(
+    qt_app: QApplication,
+) -> None:
+    calls: list[str] = []
+    worker_started = threading.Event()
+    allow_finish = threading.Event()
+
+    def generate(prompt: str) -> RewriteResult:
+        calls.append(prompt)
+        worker_started.set()
+        assert allow_finish.wait(timeout=2)
+        return RewriteResult(concise="Only once.", professional="Only once, polished.")
+
+    window = MainWindow(generate=generate)
+    window.input_text.setPlainText("\u91cd\u5165\u6d4b\u8bd5")
+
+    window.start_generation()
+
+    assert wait_until(
+        qt_app,
+        lambda: worker_started.is_set()
+        and window.worker_thread is not None
+        and window.worker_thread.isRunning(),
+    )
+    first_thread = window.worker_thread
+    first_worker = window.worker
+
+    window.start_generation()
+    wait_until(qt_app, lambda: len(calls) > 1, timeout_ms=200)
+
+    call_count = len(calls)
+    thread_was_preserved = window.worker_thread is first_thread
+    worker_was_preserved = window.worker is first_worker
+    status_message = window.statusBar().currentMessage()
+
+    allow_finish.set()
+    assert wait_until(qt_app, lambda: window.worker_thread is None)
+
+    assert call_count == 1
+    assert thread_was_preserved
+    assert worker_was_preserved
+    assert status_message == "Generation is already running."
+    assert window.rewrite_button.isEnabled()
+    assert window.worker is None
+    assert window.worker_thread is None
+    assert window.close() is True
+
+
 def test_close_during_generation_is_ignored(qt_app: QApplication) -> None:
     worker_started = threading.Event()
     allow_finish = threading.Event()

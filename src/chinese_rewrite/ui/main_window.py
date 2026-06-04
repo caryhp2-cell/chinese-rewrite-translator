@@ -132,6 +132,10 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def start_generation(self) -> None:
+        if self.worker_thread is not None:
+            self.statusBar().showMessage("Generation is already running.")
+            return
+
         chinese_text = self.input_text.toPlainText().strip()
         if not chinese_text:
             self.statusBar().showMessage("Please enter Chinese text.", 5000)
@@ -162,14 +166,12 @@ class MainWindow(QMainWindow):
     def on_generation_finished(self, result: RewriteResult) -> None:
         self.concise_output.setPlainText(result.concise)
         self.professional_output.setPlainText(result.professional)
-        self.rewrite_button.setEnabled(True)
         self.statusBar().showMessage("Done.", 3000)
 
     @Slot(str)
     def on_generation_failed(self, message: str) -> None:
         self.concise_output.clear()
         self.professional_output.clear()
-        self.rewrite_button.setEnabled(True)
         self.statusBar().showMessage("Generation failed.", 5000)
         QMessageBox.warning(self, "Generation failed", message)
 
@@ -177,6 +179,7 @@ class MainWindow(QMainWindow):
     def on_worker_thread_finished(self) -> None:
         self.worker = None
         self.worker_thread = None
+        self.rewrite_button.setEnabled(True)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.worker_thread is not None and self.worker_thread.isRunning():
