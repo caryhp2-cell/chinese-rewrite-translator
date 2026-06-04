@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from chinese_rewrite.services.prompts import build_rewrite_prompt
 from chinese_rewrite.services.parser import ModelOutputParseError, parse_rewrite_output
 
 
@@ -21,6 +22,18 @@ def test_parse_rewrite_output_extracts_json_inside_extra_text() -> None:
 
     assert result.concise == "Done by Friday."
     assert result.professional == "We will complete the report by Friday."
+
+
+def test_parse_rewrite_output_skips_prompt_example_json() -> None:
+    raw_output = (
+        build_rewrite_prompt("請確認付款狀態。")
+        + '\n\nAnswer:\n{"concise":"Please confirm payment.","professional":"Could you please confirm the payment status?"}'
+    )
+
+    result = parse_rewrite_output(raw_output)
+
+    assert result.concise == "Please confirm payment."
+    assert result.professional == "Could you please confirm the payment status?"
 
 
 def test_parse_rewrite_output_uses_label_fallback() -> None:
@@ -87,6 +100,22 @@ def test_parse_rewrite_output_finds_json_between_brace_noise() -> None:
     result = parse_rewrite_output(
         'debug {not json} {"concise":"A","professional":"B"} trailing {noise}'
     )
+
+    assert result.concise == "A"
+    assert result.professional == "B"
+
+
+@pytest.mark.parametrize(
+    "raw_output",
+    [
+        '{"concise": null, "professional": null} {"concise":"A","professional":"B"}',
+        '{"concise": "", "professional": ""} {"concise":"A","professional":"B"}',
+    ],
+)
+def test_parse_rewrite_output_skips_bad_json_candidate_before_good_json(
+    raw_output: str,
+) -> None:
+    result = parse_rewrite_output(raw_output)
 
     assert result.concise == "A"
     assert result.professional == "B"
